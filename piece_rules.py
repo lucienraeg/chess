@@ -21,14 +21,9 @@ def get_translations(board, piece):
 	elif ptype == 'N':
 		t = [(-1, -2), (1, -2), (-2, -1), (2, -1), (-2, 1), (2, 1), (-1, 2), (1, 2)]
 
-	# king
-	elif ptype == 'K':
-		t = [(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
-
-		# TO DO: castling
-
 	# rook
 	elif ptype == 'R':
+		# process each each perpendicular translation
 		for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
 
 			lim = 8
@@ -48,6 +43,7 @@ def get_translations(board, piece):
 
 	# bishop
 	elif ptype == 'B':
+		# process each diagonal translation
 		for (dx, dy) in [(-1, -1), (-1, 1), (1, -1), (1, 1)]:
 
 			lim = 8
@@ -64,6 +60,32 @@ def get_translations(board, piece):
 
 				if i <= lim:
 					t.append((i*dx, i*dy))
+
+	# queen
+	elif ptype == 'Q':
+		# process each perpendicular and diagonal translation
+		for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]:
+
+			lim = 8
+			for i in range(1, 8):
+				obs_piece = board.get_cell(x+i*dx, y+i*dy)
+
+				# establish limit
+				if lim == 8:
+					if not obs_piece == None:
+						if obs_piece.side == pside: # obstructed by piece on own side
+							lim = i-1
+						else: # obstructed by piece on opp side (can take)
+							lim = i
+
+				if i <= lim:
+					t.append((i*dx, i*dy))
+
+	# king
+	elif ptype == 'K':
+		t = [(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
+
+		# TO DO: castling
 
   
 	# validate legality of each move

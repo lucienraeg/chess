@@ -149,6 +149,12 @@ def handle_keys():
 				# set holding piece data
 				holding_piece_from = (selx, sely)
 				holding_piece = piece
+
+				# put piece back if can't move anywhere
+				if len(pos_moves) == 0:
+					main_board.place_piece(Piece(holding_piece.side, holding_piece.type, selx, sely))
+					main_board.highlighted_cells_green = []
+					holding_piece = None
 		# move
 		else:
 			if ((selx, sely) in legal_move_coords) or ((selx, sely) == holding_piece_from):
