@@ -2,10 +2,16 @@ import piece_rules
 
 class Move:
 
-	def __init__(self, piece, to_x, to_y):
+	def __init__(self, board, piece, to_x, to_y):
 		self.piece = piece
 		self.to_x = to_x
 		self.to_y = to_y
+
+		# determine value gain
+		if board.get_cell(self.to_x, self.to_y) == None:
+			self.value_gain = 0
+		else:
+			self.value_gain = piece_rules.values[board.get_cell(self.to_x, self.to_y).type]
 
 	def __repr__(self):
 		return "{}{} {} {}".format(self.piece.side, self.piece.type, coords_to_notation(self.piece.x, self.piece.y), coords_to_notation(self.to_x, self.to_y))
@@ -46,7 +52,7 @@ def calc_possible_piece_moves(board, piece):
 		tx = x+t[0]
 		ty = y+t[1]
 
-		pos_moves.append(Move(piece, tx, ty))
+		pos_moves.append(Move(board, piece, tx, ty))
 
 	return pos_moves
 

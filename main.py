@@ -3,12 +3,14 @@ import numpy as np
 import colors as col
 import move as move
 
-CON_WIDTH, CON_HEIGHT = 92, 56
+CON_WIDTH, CON_HEIGHT = 12, 12
 STATUS_WIDTH, STATUS_HEIGHT = 12, 2
 GRAVE_WIDTH, GRAVE_HEIGHT = 12, 4
 
-SCREEN_WIDTH = CON_WIDTH
-SCREEN_HEIGHT = STATUS_HEIGHT+CON_HEIGHT
+PANEL_WIDTH, PANEL_HEIGHT = 32, CON_HEIGHT+STATUS_HEIGHT+GRAVE_HEIGHT
+
+SCREEN_WIDTH = CON_WIDTH+PANEL_WIDTH
+SCREEN_HEIGHT = PANEL_HEIGHT
 
 class Piece():
 	
@@ -23,8 +25,7 @@ class Piece():
 
 class Board():
 
-	def __init__(self, title='        '):
-		self.title = title
+	def __init__(self):
 		self.cells = np.array([[None]*8]*8)
 		self.highlighted_cells_green = []
 		self.highlighted_cells_blue = []
@@ -61,6 +62,9 @@ class Board():
 		# apply changes
 		self.place_piece(Piece(piece.side, piece.type, to_x, to_y))
 		self.remove_piece(piece)
+
+		# add move to move history
+		move_history.append(m)
 
 	def standard_setup(self):
 		# black
@@ -161,7 +165,7 @@ def handle_keys():
 
 				# move piece
 				if ((selx, sely)) in legal_move_coords:
-					main_board.move_piece(move.Move(holding_piece, selx, sely))
+					main_board.move_piece(move.Move(main_board, holding_piece, selx, sely))
 				# put piece back
 				else:
 					main_board.place_piece(Piece(holding_piece.side, holding_piece.type, selx, sely))
@@ -193,10 +197,6 @@ def draw_board(b, xoffset, yoffset, draw_coords=False, draw_sel=False, style=0):
 
 		for i, c in enumerate(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']):
 			con.draw_char(xoffset+i, yoffset-1, c, (col.DK_GRAY, col.BLUE)[i == selx])
-
-	# draw title
-	if not b.title == '':
-		con.draw_str(xoffset, yoffset+8, b.title, col.BLUE)
 
 	# draw all cells
 	for y in range(8):
@@ -254,6 +254,7 @@ def draw_status():
 		status.draw_char(STATUS_WIDTH-1, 0, '-', col.GRAY)
 
 def draw_grave(board):
+	# sep bar
 	for x in range(GRAVE_WIDTH):
 		grave.draw_char(x, 0, 205, col.WHITE)
 
@@ -266,15 +267,32 @@ def draw_grave(board):
 		yy = i // 12 + 1
 		grave.draw_char(xx, yy, piece_char_indicies[piece.type], (col.BROWN, col.BEIGE)[piece.side == 'w'], None)
 
+def draw_panel():
+	# sep bar
+	for y in range(PANEL_HEIGHT):
+		panel.draw_char(0, y, 186, col.WHITE)
+	panel.draw_char(0, 1, 185, col.WHITE)
+	panel.draw_char(0, 14, 185, col.WHITE)
+
+	# list move history
+	for i, m in enumerate(move_history):
+		# notation of piece
+		panel.draw_char(1, i, piece_char_indicies[m.piece.type], (col.BROWN, col.BEIGE)[m.piece.side == 'w'], None)
+
+		# notation of translation
+		move_note = "{}{} {}".format(move.coords_to_notation(m.piece.x, m.piece.y), move.coords_to_notation(m.to_x, m.to_y), m.value_gain)
+		panel.draw_str(2, i, move_note, col.WHITE)
+
 def clamp(x, a, b):
 	return max(a, min(b, x))
 
 # init
 tdl.set_font('fonts/terminal16x16chess.png', greyscale=True, altLayout=False)
-root = tdl.init(SCREEN_WIDTH, SCREEN_HEIGHT, title='roguelike', fullscreen=False)
+root = tdl.init(SCREEN_WIDTH, SCREEN_HEIGHT, title='chess', fullscreen=False)
 status = tdl.Console(STATUS_WIDTH, STATUS_HEIGHT)
 con = tdl.Console(CON_WIDTH, CON_HEIGHT)
 grave = tdl.Console(GRAVE_WIDTH, GRAVE_HEIGHT)
+panel = tdl.Console(PANEL_WIDTH, PANEL_HEIGHT)
 selx, sely = 0, 0
 
 # board info
@@ -286,9 +304,7 @@ main_board.standard_setup()
 holding_piece = None
 holding_piece_from = (0, 0)
 legal_move_coords = []
-
-# create alt boards
-alt_boards = [Board() for i in range(40)]
+move_history = []
 
 # main loop
 while not tdl.event.is_window_closed():
@@ -296,21 +312,15 @@ while not tdl.event.is_window_closed():
 	# draw status and grave
 	draw_status()
 	draw_grave(main_board)
+	draw_panel()
 
-	# draw boards
+	# draw board
 	draw_board(main_board, 2, 2, draw_coords=True, draw_sel=True, style=1)
-	for i, alt_board in enumerate(alt_boards):
-		xx = i % 8
-		yy = i // 8
 
-		x = 17+(xx*9)
-		y = 2+(yy*10)
-
-		draw_board(alt_board, x, y, style=1)
-
-	root.blit(status, 0, 0, SCREEN_WIDTH, STATUS_HEIGHT, 0, 0)
+	root.blit(status, 0, 0, STATUS_WIDTH, STATUS_HEIGHT, 0, 0)
 	root.blit(con, 0, 2, CON_WIDTH, CON_HEIGHT, 0, 0)
 	root.blit(grave, 0, 14, GRAVE_WIDTH, GRAVE_HEIGHT, 0, 0)
+	root.blit(panel, CON_WIDTH, 0, PANEL_WIDTH, PANEL_HEIGHT, 0, 0)
 	tdl.flush()
 
 	exit_game = handle_keys()

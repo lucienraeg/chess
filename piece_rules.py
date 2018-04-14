@@ -1,3 +1,5 @@
+values = {'K': 256, 'Q': 9, 'B': 3, 'N': 3, 'R': 5, 'P': 1}
+
 def get_translations(board, piece):
 	pside = piece.side
 	ptype = piece.type
